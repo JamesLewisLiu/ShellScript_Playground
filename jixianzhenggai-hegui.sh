@@ -162,5 +162,5 @@ if [ -f /etc/vsftpd.conf ];then FTPCONF="/etc/vsftpd.conf";VSFTP;elif [ -f /etc/
 #else exit;fi;
 
 
-
+#Self delete after execution
 #rm -- "$0"
