@@ -86,7 +86,8 @@ printf "all:0.0.0.0:allow\nsshd:0.0.0.0:allow\nall:10.0.0.0:allow\nsshd:10.0.0.0
 printf "all:all:deny\n"|tee /etc/hosts.deny &>/dev/null;
 
 #直接备份，注释原有的umask并追加新的umask 027进环境配置文件。
-for a in $(find /etc/profile /etc/csh.login /etc/csh.cshrc /etc/bashrc /root/.bashrc /root/.cshrc);do cp -p $a $a-bak-umask-$DATE;sed -i '/^umask/s/^/#/g;/002/s/#//;/022/s/#//;/027/s/#//;$aumask 027' $a;done
+PROFILE="/etc/profile /etc/csh.login /etc/csh.cshrc /etc/bashrc /root/.bashrc /root/.cshrc"
+for a in $PROFILE;do if [[ -e $a ]];then IFS=$'\n';if [[ $(_check_string_if_exist /etc/profile '^umask 027') -eq 1 ]];then cp -p $a $a-bak-umask-$DATE;sed -i '/^umask/s/^/#/g;/002/s/#//;/022/s/#//;/027/s/#//;$aumask 027' $a;IFS=$OLD_IFS;fi;fi;done
 
 IFS=$'\n'
 #/etc/profile
@@ -103,8 +104,6 @@ cp -p /etc/login.defs /etc/login.defs-bak-$DATE;sed -i '/PASS_MAX_DAYS/s/99999/9
 
 #系统Banner相关
 if [[ -e /etc/motd ]];then if [[ $(_check_string_if_exist /etc/motd 'Authorized users only. All activity may be monitored and reported.') -eq 1 ]];then printf "Authorized users only. All activity may be monitored and reported.\n"|tee /etc/motd &>/dev/null;echo '/etc/motd is empty,modified.';else echo '/etc/motd is good,skip';fi;else echo '/etc/motd is not exist,skipped.';fi
-
-
 
 if [[ $(_check_string_if_exist /etc/ssh/sshd_config 'Banner') -eq 1 ]];then cp /etc/ssh/sshd_config /etc/ssh/sshd_config-$DATE;sed -i '/#Banner/aBanner /etc/motd' /etc/ssh/sshd_config;fi
 find / -maxdepth 3 -name hosts.equiv|xargs -I {} mv {} {}-bak-$DATE
