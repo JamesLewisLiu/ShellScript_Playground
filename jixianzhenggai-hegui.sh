@@ -22,42 +22,33 @@ VSFTP(){
 #banner
 if [[ $(_get_equal_value $FTPCONF 'ftpd_banner') != "\"Authorized users only. All activity may be monitored and reported.\"" ]];then sed -i '/^ftpd_banner/d;/^#ftpd_banner/aftpd_banner="Authorized users only. All activity may be monitored and reported."' $FTPCONF;fi
 if [[ $(_check_string_if_exist $FTPCONF 'ftpd_banner') -eq 1 ]];then sed -i '/^#ftpd_banner/aftpd_banner="Authorized users only. All activity may be monitored and reported."' $FTPCONF;fi
-
 #anonymous_enable=NO
 if [[ $(_check_string_if_exist $FTPCONF 'anonymous_enable') -eq 1 ]];then sed -i '$aanonymous_enable=NO' $FTPCONF;fi
 if [[ $(_get_equal_value $FTPCONF 'anonymous_enable'|tr 'a-z' 'A-Z') != "NO" ]];then sed -i '/^anonymous_enable/s/YES/NO/g;/^anonymous_enable/s/yes/NO/g;' $FTPCONF;fi
-
 #userlist_enable=YES
 if [[ $(_check_string_if_exist $FTPCONF 'userlist_enable') -eq 1 ]];then sed -i '$auserlist_enable=YES' $FTPCONF;fi
 if [[ $(_get_equal_value $FTPCONF 'userlist_enable'|tr 'a-z' 'A-Z') != "YES" ]];then sed -i '/^userlist_enable/s/NO/YES/g;/^userlist_enable/s/no/YES/g;' $FTPCONF;fi
-
 #userlist define
 if [ ! -f /etc/vsftpd/user_list ];then printf "# vsftpd userlist\n# If userlist_deny=NO, only allow users in this file\n# If userlist_deny=YES (default), never allow users in this file, and\n# do not even prompt for a password.\n# Note that the default vsftpd pam config also checks /etc/vsftpd/ftpusers\n# for users that are denied.\nroot\nbin\ndaemon\nadm\nlp\nsync\nshutdown\nhalt\nmail\nnews\nuucp\noperator\ngames\nnobody\n" | tee /etc/vsftpd/user_list &>/dev/null;fi
 if [ ! -f /etc/vsftpd/ftpusers ];then printf "# Users that are not allowed to login via ftp\nroot\nbin\ndaemon\nadm\nlp\nsync\nshutdown\nhalt\nmail\nnews\nuucp\noperator\ngames\nnobody\n" | tee /etc/vsftpd/ftpusers &>/dev/null;fi
-
 #userlist_file=/etc/vsftpd/user_list
 if [[ $(_check_string_if_exist $FTPCONF 'userlist_file') -eq 1 ]];then sed -i '/^userlist_enable/auserlist_file=/etc/vsftpd/user_list' $FTPCONF;fi
 if [[ $(_get_equal_value $FTPCONF 'userlist_file') != "/etc/vsftpd/user_list" ]];then sed -i '/^userlist_file=/d;/^userlist_enable/auserlist_file=/etc/vsftpd/user_list' $FTPCONF;fi
-
 #chroot_local_user=YES
 if [[ $(_check_string_if_exist $FTPCONF 'chroot_local_user') -eq 1 ]];then sed -i '/^chroot_local_user/s/^/#/g;/chroot_local_user=/achroot_local_user=YES' $FTPCONF;fi
 if [[ $(_get_equal_value $FTPCONF 'chroot_local_user'|tr 'a-z' 'A-Z') != "YES" ]];then sed -i '/^chroot_local_user/s/NO/YES/g;/^chroot_local_user/s/no/YES/g;' $FTPCONF;fi
-
 #ls_recurse_enable=YES
 if [[ $(_check_string_if_exist $FTPCONF 'ls_recurse_enable') -eq 1 ]];then sed -i '/^ls_recurse_enable/s/^/#/g;/ls_recurse_enable=/als_recurse_enable=YES' $FTPCONF;fi
 if [[ $(_get_equal_value $FTPCONF 'ls_recurse_enable'|tr 'a-z' 'A-Z') != "YES" ]];then sed -i '/^ls_recurse_enable/s/NO/YES/g;/^ls_recurse_enable/s/no/YES/g;' $FTPCONF;fi
-
 #local_umask=022
 if [[ $(_check_string_if_exist $FTPCONF 'local_umask') -eq 1 ]];then sed -i '/^#local_umask=/alocal_umask=022' $FTPCONF;fi
 if [[ $(_get_equal_value $FTPCONF 'local_umask') != "022" ]];then sed -i 's/^local_umask=.*/local_umask=022/g' $FTPCONF;fi
-
 #anon_umask=022
 if [[ $(_check_string_if_exist $FTPCONF 'anon_umask') -eq 1 ]];then sed -i '/^local_umask=/aanon_umask=022' $FTPCONF;fi
 if [[ $(_get_equal_value $FTPCONF 'anon_umask') != "022" ]];then sed -i 's/^anon_umask=.*/anon_umask=022/g' $FTPCONF;fi
-
 }
 
-
+#Execute Area
 #检测是否存在/var/log/cron，若无则创建
 if [[ -e /var/log/cron ]];then chmod 775 /var/log/cron;else touch /var/log/cron;chmod 775 /var/log/cron;fi
 #检测是否存在/etc/syslog-ng，若无则创建
@@ -100,7 +91,8 @@ if [ -f /etc/csh.cshrc ];then if [[ $(_check_string_if_exist /etc/csh.cshrc 'TMO
 IFS=$OLD_IFS
 
 #备份并修改/etc/login.defs相关参数
-cp -p /etc/login.defs /etc/login.defs-bak-$DATE;sed -i '/PASS_MAX_DAYS/s/99999/90/;/PASS_MIN_DAYS/s/0/1/;/PASS_MIN_LEN/s/5/8/;$aLASTLOG_ENAB\tyes\nFAILLOG_ENAB\tyes\n' /etc/login.defs
+cp -p /etc/login.defs /etc/login.defs-bak-$DATE;
+sed -i '/PASS_MAX_DAYS/s/99999/90/;/PASS_MIN_DAYS/s/0/1/;/PASS_MIN_LEN/s/5/8/;$aLASTLOG_ENAB\tyes\nFAILLOG_ENAB\tyes\n' /etc/login.defs
 
 #系统Banner相关
 if [[ -e /etc/motd ]];then if [[ $(_check_string_if_exist /etc/motd 'Authorized users only. All activity may be monitored and reported.') -eq 1 ]];then printf "Authorized users only. All activity may be monitored and reported.\n"|tee /etc/motd &>/dev/null;echo '/etc/motd is empty,modified.';else echo '/etc/motd is good,skip';fi;else echo '/etc/motd is not exist,skipped.';fi
@@ -159,7 +151,6 @@ systemctl disable --now snmpd
 #vsftp相关
 if [ -f /etc/vsftpd.conf ];then FTPCONF="/etc/vsftpd.conf";VSFTP;elif [ -f /etc/vsftpd/vsftpd.conf ];then FTPCONF="/etc/vsftpd/vsftpd.conf";VSFTP;fi
 #else exit;fi;
-
 
 #Self delete after execution
 #rm -- "$0"
