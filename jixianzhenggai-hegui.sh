@@ -12,6 +12,10 @@ _check_string_if_exist(){
 _get_equal_value(){
     grep -v -- '#' $1|grep -- $2|awk -F\= '{gsub(/ = /,"=");print$2}'
 }
+#example _get_space_value $FILE 'string'
+_get_space_value(){
+    grep -v -- '#' $1|grep -- $2|awk '{print$2}'
+}
 
 #SED
 SED_ADD_LL(){
@@ -70,7 +74,7 @@ if [[ $(_check_string_if_exist /etc/syslog.conf '/var/log/cron') -eq 1 ]];then p
 if [[ $(_check_string_if_exist /etc/rsyslog.conf '/var/log/cron') -eq 1 ]];then sed -i '$acron.*\t/var/log/cron\n' /etc/rsyslog.conf;fi
 #检测/etc/syslog-ng/syslog-ng.conf中是否存在'相关参数'，若无则追加。
 if [[ -e /etc/syslog-ng/syslog-ng.conf ]];then cp /etc/syslog-ng/syslog-ng.conf /etc/syslog-ng/syslog-ng.conf-bak-$DATE;else printf '$adestination logserver { udp("10.10.10.10" port(514)); };log { source(src); destination(logserver); };\n' | tee /etc/syslog-ng/syslog-ng.conf &>/dev/null;fi
-if [[ $(_check_string_if_exist /etc/syslog-ng/syslog-ng.conf 'adestination') -eq 1 ]];then sed -i '$adestination logserver { udp("10.10.10.10" port(514)); };log { source(src); destination(logserver); };' /etc/syslog-ng/syslog-ng.conf;fi
+if [[ $(_check_string_if_exist /etc/syslog-ng/syslog-ng.conf 'destination') -eq 1 ]];then sed -i '$adestination logserver { udp("10.10.10.10" port(514)); };log { source(src); destination(logserver); };' /etc/syslog-ng/syslog-ng.conf;fi
 
 #创建/etc/hosts.allow、/etc/hosts.deny，并添加条目
 printf "all:0.0.0.0:allow\nsshd:0.0.0.0:allow\nall:10.0.0.0:allow\nsshd:10.0.0.0:allow\n"|tee /etc/hosts.allow &>/dev/null;
@@ -92,7 +96,11 @@ IFS=$OLD_IFS
 
 #备份并修改/etc/login.defs相关参数
 cp -p /etc/login.defs /etc/login.defs-bak-$DATE;
-sed -i '/PASS_MAX_DAYS/s/99999/90/;/PASS_MIN_DAYS/s/0/1/;/PASS_MIN_LEN/s/5/8/;$aLASTLOG_ENAB\tyes\nFAILLOG_ENAB\tyes\n' /etc/login.defs
+if [[ $(_check_string_if_exist /etc/login.defs 'PASS_MAX_DAYS') -eq 1 ]];then sed -i '$aPASS_MAX_DAYS\t 90' /etc/login.defs;else if [[ $(_get_space_value /etc/login.defs 'PASS_MAX_DAYS') != "90" ]];then sed -i '/^PASS_MAX_DAYS/s/^/#/g;/^#PASS_MAX_DAYS/aPASS_MAX_DAYS\t 90' /etc/login.defs;fi;fi
+if [[ $(_check_string_if_exist /etc/login.defs 'PASS_MIN_DAYS') -eq 1 ]];then sed -i '$aPASS_MIN_DAYS\t 1' /etc/login.defs;else if [[ $(_get_space_value /etc/login.defs 'PASS_MIN_DAYS') != "1" ]];then sed -i '/^PASS_MIN_DAYS/s/^/#/g;/^#PASS_MIN_DAYS/aPASS_MIN_DAYS\t 1' /etc/login.defs;fi;fi
+if [[ $(_check_string_if_exist /etc/login.defs 'PASS_MIN_LEN') -eq 1 ]];then sed -i '$aPASS_MIN_LEN\t 8' /etc/login.defs;else if [[ $(_get_space_value /etc/login.defs 'PASS_MIN_LEN') != "8" ]];then sed -i '/^PASS_MIN_LEN/s/^/#/g;/^#PASS_MIN_LEN/aPASS_MIN_LEN\t 8' /etc/login.defs;fi;fi
+if [[ $(_check_string_if_exist /etc/login.defs 'LASTLOG_ENAB') -eq 1 ]];then sed -i '$aLASTLOG_ENAB\t yes' /etc/login.defs;else if [[ $(_get_space_value /etc/login.defs 'LASTLOG_ENAB') != "yes" ]];then sed -i '/^LASTLOG_ENAB/s/^/#/g;/^#LASTLOG_ENAB/aLASTLOG_ENAB\t yes' /etc/login.defs;fi;fi
+if [[ $(_check_string_if_exist /etc/login.defs 'FAILLOG_ENAB') -eq 1 ]];then sed -i '$aFAILLOG_ENAB\t yes' /etc/login.defs;else if [[ $(_get_space_value /etc/login.defs 'FAILLOG_ENAB') != "yes" ]];then sed -i '/^FAILLOG_ENAB/s/^/#/g;/^#FAILLOG_ENAB/aFAILLOG_ENAB\t yes' /etc/login.defs;fi;fi
 
 #系统Banner相关
 if [[ -e /etc/motd ]];then if [[ $(_check_string_if_exist /etc/motd 'Authorized users only. All activity may be monitored and reported.') -eq 1 ]];then printf "Authorized users only. All activity may be monitored and reported.\n"|tee /etc/motd &>/dev/null;echo '/etc/motd is empty,modified.';else echo '/etc/motd is good,skip';fi;else echo '/etc/motd is not exist,skipped.';fi
@@ -122,8 +130,10 @@ chmod 0644 /etc/passwd;chmod 0400 /etc/shadow;chmod 0644 /etc/group
 
 cp -p /etc/pam.d/su /etc/pam.d/su-bak-$DATE;sed -i '/auth\t\tsufficient\tpam_rootok.so/aauth\t\trequired\tpam_wheel.so group=wheel\nauth\t\trequired\tpam_wheel.so use_uid' /etc/pam.d/su;
 
+IFS=$'\n'
 cp -p /etc/pam.d/system-auth /etc/pam.d/system-auth-bak-$DATE;
 if [[ $(_check_string_if_exist /etc/pam.d/system-auth 'dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1 minclass=3 minlen=8 enforce_for_root') -eq 1 ]];then sed -i '/password    requisite/apassword    requisite     pam_cracklib.so dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1 minclass=3 minlen=8 enforce_for_root' /etc/pam.d/system-auth;fi
+IFS=$OLD_IFS
 
 if [[ $(_check_string_if_exist /etc/pam.d/system-auth 'remember=5') -eq 1 ]];then sed -i '/password    sufficient    pam_unix.so/s/$/ remember=5/' /etc/pam.d/system-auth;fi
 
