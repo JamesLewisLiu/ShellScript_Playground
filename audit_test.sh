@@ -1,7 +1,22 @@
-OLD_IFS=$IFS
-#IFS=$'\n'
+#!/bin/bash
+#Use for testing only
+#Function
+_hyphen_grep(){
+	grep -- $1 $2
+}
 
--D
+_audit_check(){
+	_hyphen_grep $1 /etc/audit/rules.d/audit.rules
+}
+
+#AUDIT START
+OLD_IFS=$IFS
+IFS=$'\n'
+
+_hyphen_grep "-w /etc/sudoers -p wa -k sudo_audit" /etc/audit/rules.d/audit.rules
+sleep 15
+
+AUDIT="
 -w /etc/sudoers -p wa -k sudo_audit
 -a always,exit -F arch=b64 -S sethostname -S setdomainname -k audit_rules_networkconfig_modification
 -w /etc/issue -p wa -k audit_rules_networkconfig_modification
@@ -32,12 +47,9 @@ OLD_IFS=$IFS
 -a always,exit -F path=/usr/bin/passwd -F perm=x -F auid>=1000 -F auid!=4294967295 -k privileged
 -a always,exit -F path=/usr/bin/sudo -F perm=x -F auid>=1000 -F auid!=4294967295 -k privileged
 -a always,exit -F path=/usr/bin/crontab -F perm=x -F auid>=1000 -F auid!=4294967295 -k privileged
+"
+for a in $AUDIT;do _audit_check $a;done
+_hyphen_grep '-w /etc/sudoers -p wa -k sudo_audit' /etc/audit/rules.d/audit.rules
+IFS=$OLD_IFS
+#AUDIT END
 
-_dash_grep(){
-	grep -- $1 $2
-}
-
-_audit_check(){
-	_dash_grep $1 /etc/audit/rules.d/audit.rules
-}
-_dash_grep '-w /etc/sudoers -p wa -k sudo_audit' 

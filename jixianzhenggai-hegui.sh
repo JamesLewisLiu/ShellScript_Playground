@@ -82,7 +82,7 @@ printf "all:all:deny\n"|tee /etc/hosts.deny &>/dev/null;
 
 #直接备份，注释原有的umask并追加新的umask 027进环境配置文件。
 PROFILE="/etc/profile /etc/csh.login /etc/csh.cshrc /etc/bashrc /root/.bashrc /root/.cshrc"
-for a in $PROFILE;do if [[ -e $a ]];then IFS=$'\n';if [[ $(_check_string_if_exist /etc/profile '^umask 027') -eq 1 ]];then cp -p $a $a-bak-umask-$DATE;sed -i '/^umask/s/^/#/g;/002/s/#//;/022/s/#//;/027/s/#//;$aumask 027' $a;IFS=$OLD_IFS;fi;fi;done
+for a in $PROFILE;do if [[ -e $a ]];then IFS=$'\n';if [[ $(_check_string_if_exist /etc/profile '^umask 027') -eq 1 ]];then cp -p $a $a-bak-umask-$DATE;sed -i '/^umask/s/^/#/g;/^UMASK/s/^/#/g;$aumask 027' $a;IFS=$OLD_IFS;fi;fi;done
 
 IFS=$'\n'
 #/etc/profile
@@ -103,9 +103,12 @@ if [[ $(_check_string_if_exist /etc/login.defs 'LASTLOG_ENAB') -eq 1 ]];then sed
 if [[ $(_check_string_if_exist /etc/login.defs 'FAILLOG_ENAB') -eq 1 ]];then sed -i '$aFAILLOG_ENAB\t yes' /etc/login.defs;else if [[ $(_get_space_value /etc/login.defs 'FAILLOG_ENAB') != "yes" ]];then sed -i '/^FAILLOG_ENAB/s/^/#/g;/^#FAILLOG_ENAB/aFAILLOG_ENAB\t yes' /etc/login.defs;fi;fi
 
 #系统Banner相关
-if [[ -e /etc/motd ]];then if [[ $(_check_string_if_exist /etc/motd 'Authorized users only. All activity may be monitored and reported.') -eq 1 ]];then printf "Authorized users only. All activity may be monitored and reported.\n"|tee /etc/motd &>/dev/null;echo '/etc/motd is empty,modified.';else echo '/etc/motd is good,skip';fi;else echo '/etc/motd is not exist,skipped.';fi
+IFS=$'\n'
+if [[ -e /etc/motd ]];then if [[ $(_check_string_if_exist /etc/motd 'Authorized users only. All activity may be monitored and reported.') -eq 1 ]];then printf "Authorized users only. All activity may be monitored and reported.\n"|tee /etc/motd &>/dev/null;echo '/etc/motd is empty,modified.';else echo '/etc/motd is good,skip';fi;else printf "Authorized users only. All activity may be monitored and reported.\n"|tee /etc/motd &>/dev/null;echo '/etc/motd is not exist,created.';fi;
+if [[ $(_check_string_if_exist /etc/ssh/sshd_config 'Banner /etc/motd') -eq 1 ]];then cp /etc/ssh/sshd_config /etc/ssh/sshd_config-$DATE;sed -i '/^#Banner/aBanner /etc/motd' /etc/ssh/sshd_config;else if [[ $(_get_space_value /etc/ssh/sshd_config 'Banner') != "/etc/motd" ]];then sed -i '/^Banner/d;/^#Banner/aBanner /etc/motd' /etc/ssh/sshd_config;fi;fi
+IFS=$OLD_IFS
 
-if [[ $(_check_string_if_exist /etc/ssh/sshd_config 'Banner') -eq 1 ]];then cp /etc/ssh/sshd_config /etc/ssh/sshd_config-$DATE;sed -i '/#Banner/aBanner /etc/motd' /etc/ssh/sshd_config;fi
+#if [[ $(_check_string_if_exist /etc/ssh/sshd_config 'Banner') -eq 1 ]];then cp /etc/ssh/sshd_config /etc/ssh/sshd_config-$DATE;sed -i '/^#Banner/aBanner /etc/motd' /etc/ssh/sshd_config;fi
 find / -maxdepth 3 -name hosts.equiv|xargs -I {} mv {} {}-bak-$DATE
 if [[ -e /etc/issue ]];then mv /etc/issue /etc/issue-bak-$DATE;fi
 if [[ -e /etc/issue.net ]];then mv /etc/issue.net /etc/issue-net-bak-$DATE;fi
@@ -118,9 +121,10 @@ if [[ $(_check_string_if_exist /etc/sysctl.conf 'net.ipv4.conf.all.accept_redire
 if [[ $(_check_string_if_exist /etc/sysctl.conf 'net.ipv4.conf.all.rp_filter') -eq 1 ]];then SED_ADD_LL 'net.ipv4.conf.all.rp_filter = 0' /etc/sysctl.conf;fi
 if [[ $(_check_string_if_exist /etc/sysctl.conf 'net.ipv4.conf.default.rp_filter') -eq 1 ]];then SED_ADD_LL 'net.ipv4.conf.default.rp_filter = 0' /etc/sysctl.conf;fi
 #Mod if value is not fulfilled
-if [[ $(_get_equal_value /etc/sysctl.conf 'net.ipv4.conf.all.accept_redirects') != "0" ]];then sed -i '/^net.ipv4.conf.all.accept_redirects/s/^/#/g;/^#net.ipv4.conf.all.accept_redirects/anet.ipv4.conf.all.accept_redirects = 0' /etc/sysctl.conf;fi
-if [[ $(_get_equal_value /etc/sysctl.conf 'net.ipv4.conf.all.rp_filter') != "0" ]];then sed -i '/^net.ipv4.conf.all.rp_filter/s/^/#/g;/^#net.ipv4.conf.all.rp_filter/anet.ipv4.conf.all.rp_filter = 0' /etc/sysctl.conf;fi
-if [[ $(_get_equal_value /etc/sysctl.conf 'net.ipv4.conf.default.rp_filter') != "0" ]];then sed -i '/^net.ipv4.conf.default.rp_filter/s/^/#/g;/^#net.ipv4.conf.default.rp_filter/anet.ipv4.conf.default.rp_filter = 0' /etc/sysctl.conf;fi
+cp -p /etc/sysctl.conf /etc/sysctl.conf-bak-$(date +%s);
+if [[ $(_get_equal_value /etc/sysctl.conf 'net.ipv4.conf.all.accept_redirects') != "0" ]];then sed -i '/net.ipv4.conf.all.accept_redirects/d;/^#net.ipv4.conf.all.accept_redirects/anet.ipv4.conf.all.accept_redirects = 0' /etc/sysctl.conf;fi
+if [[ $(_get_equal_value /etc/sysctl.conf 'net.ipv4.conf.all.rp_filter') != "1" ]];then sed -i '/net.ipv4.conf.all.rp_filter/d;/^#net.ipv4.conf.all.rp_filter/anet.ipv4.conf.all.rp_filter = 1' /etc/sysctl.conf;fi
+if [[ $(_get_equal_value /etc/sysctl.conf 'net.ipv4.conf.default.rp_filter') != "1" ]];then sed -i '/net.ipv4.conf.default.rp_filter/d;/^#net.ipv4.conf.default.rp_filter/anet.ipv4.conf.default.rp_filter = 1' /etc/sysctl.conf;fi
 
 sysctl -p;
 
@@ -137,7 +141,8 @@ IFS=$OLD_IFS
 
 if [[ $(_check_string_if_exist /etc/pam.d/system-auth 'remember=5') -eq 1 ]];then sed -i '/password    sufficient    pam_unix.so/s/$/ remember=5/' /etc/pam.d/system-auth;fi
 
-if [[ -e /etc/logrotate.d/syslog ]];then cp -p /etc/logrotate.d/syslog /etc/logrotate.d/syslog-bak-$DATE;sed -i '/missingok/a\    size 10M' /etc/logrotate.d/syslog;fi
+#syslogrotate is not exist,JUST CREATE IT
+printf '/var/log/syslog\n{\n    maxage 365\n    rotate 30\n    notifempty\n    copytruncate\n    missingok\n    size +4096k\n    sharedscriptsendscript\n}\n'|tee /etc/logrotate.d/syslog &>/dev/null
 
 printf 'console\nvc/1\nvc/2\nvc/3\nvc/4\nvc/5\nvc/6\nvc/7\nvc/8\nvc/9\nvc/10\nvc/11\ntty1\ntty2\ntty3\ntty4\ntty5\ntty6\ntty7\ntty8\ntty9\ntty10\ntty11\nttyS0\nttysclp0\nsclp_line0\n3270/tty1\nhvc0\nhvc1\nhvc2\nhvc3\nhvc4\nhvc5\nhvc6\nhvc7\nhvsi0\nhvsi1\nhvsi2\nxvc0\n'|tee /etc/securetty &>/dev/null;chmod 0600 /etc/securetty
 
