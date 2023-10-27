@@ -84,6 +84,8 @@ printf "all:all:deny\n"|tee /etc/hosts.deny &>/dev/null;
 PROFILE="/etc/profile /etc/csh.login /etc/csh.cshrc /etc/bashrc /root/.bashrc /root/.cshrc"
 for a in $PROFILE;do if [[ -e $a ]];then IFS=$'\n';if [[ $(_check_string_if_exist /etc/profile '^umask 027') -eq 1 ]];then cp -p $a $a-bak-umask-$DATE;sed -i '/^umask/s/^/#/g;/^UMASK/s/^/#/g;$aumask 027' $a;IFS=$OLD_IFS;fi;fi;done
 
+cp /root/.bashrc /root/.bashrc-bak-$(date +%s);sed -i '/PATH/s/\.//g' /root/.bashrc;
+
 IFS=$'\n'
 #/etc/profile
 if [[ $(_check_string_if_exist /etc/profile 'TMOUT=180') -eq 1 ]];then SED_ADD_LL 'TMOUT=180' /etc/profile;fi
