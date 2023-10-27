@@ -141,6 +141,15 @@ cp -p /etc/pam.d/system-auth /etc/pam.d/system-auth-bak-$DATE;
 if [[ $(_check_string_if_exist /etc/pam.d/system-auth 'dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1 minclass=3 minlen=8 enforce_for_root') -eq 1 ]];then sed -i '/password    requisite/apassword    requisite     pam_cracklib.so dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1 minclass=3 minlen=8 enforce_for_root' /etc/pam.d/system-auth;fi
 IFS=$OLD_IFS
 
+#dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1 minclass=3 minlen=8
+cp -p /etc/security/pwquality.conf /etc/security/pwquality.conf-bak-$(date +%s);
+if [[ $(_get_equal_value /etc/security/pwquality.conf 'dcredit') != "-1" ]];then sed -i '/dcredit/s/^/#/;/^#dcredit/adcredit = -1' /etc/security/pwquality.conf;fi
+if [[ $(_get_equal_value /etc/security/pwquality.conf 'ucredit') != "-1" ]];then sed -i '/ucredit/s/^/#/;/^#ucredit/aucredit = -1' /etc/security/pwquality.conf;fi
+if [[ $(_get_equal_value /etc/security/pwquality.conf 'lcredit') != "-1" ]];then sed -i '/lcredit/s/^/#/;/^#lcredit/alcredit = -1' /etc/security/pwquality.conf;fi
+if [[ $(_get_equal_value /etc/security/pwquality.conf 'ocredit') != "-1" ]];then sed -i '/ocredit/s/^/#/;/^#ocredit/aocredit = -1' /etc/security/pwquality.conf;fi
+if [[ $(_get_equal_value /etc/security/pwquality.conf 'minclass') != "3" ]];then sed -i '/minclass/s/^/#/;/^#minclass/aminclass = -1' /etc/security/pwquality.conf;fi
+if [[ $(_get_equal_value /etc/security/pwquality.conf 'minlen') != "8" ]];then sed -i '/minlen/s/^/#/;/^#minlen/aminlen = -1' /etc/security/pwquality.conf;fi
+
 if [[ $(_check_string_if_exist /etc/pam.d/system-auth 'remember=5') -eq 1 ]];then sed -i '/password    sufficient    pam_unix.so/s/$/ remember=5/' /etc/pam.d/system-auth;fi
 
 #syslogrotate is not exist,JUST CREATE IT
