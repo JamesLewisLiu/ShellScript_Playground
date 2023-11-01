@@ -88,9 +88,9 @@ cp /root/.bashrc /root/.bashrc-bak-$(date +%s);sed -i '/PATH/s/\.//g' /root/.bas
 
 IFS=$'\n'
 #/etc/profile
-if [[ $(_check_string_if_exist /etc/profile 'TMOUT=180') -eq 1 ]];then SED_ADD_LL 'TMOUT=180' /etc/profile;fi
-if [[ $(_check_string_if_exist /etc/profile 'export TMOUT') -eq 1 ]];then sed -i '/TMOUT=180/aexport TMOUT' /etc/profile;fi
-if [[ $(_check_string_if_exist /etc/profile 'autologout=30') -eq 1 ]];then SED_ADD_LL 'set autologout=30' /etc/profile;fi
+if [[ $(_check_string_if_exist /etc/profile 'TMOUT=300') -eq 1 ]];then SED_ADD_LL 'TMOUT=300' /etc/profile;fi
+if [[ $(_check_string_if_exist /etc/profile 'export TMOUT') -eq 1 ]];then sed -i '/TMOUT=300/aexport TMOUT' /etc/profile;fi
+#if [[ $(_check_string_if_exist /etc/profile 'autologout=30') -eq 1 ]];then SED_ADD_LL 'set autologout=30' /etc/profile;fi
 if [[ $(_check_string_if_exist /etc/profile '^umask 027') -eq 1 ]];then SED_ADD_LL 'umask 027' /etc/profile;fi
 #csh.cshrc
 if [ -f /etc/csh.cshrc ];then if [[ $(_check_string_if_exist /etc/csh.cshrc 'TMOUT=180') -eq 1 ]];then SED_ADD_LL 'TMOUT=180' /etc/csh.cshrc;fi;if [[ $(_check_string_if_exist /etc/csh.cshrc 'export TMOUT') -eq 1 ]];then sed -i '/TMOUT=180/aexport TMOUT' /etc/csh.cshrc;fi;if [[ $(_check_string_if_exist /etc/csh.cshrc 'autologout=30') -eq 1 ]];then SED_ADD_LL 'set autologout=30' /etc/csh.cshrc;fi;fi;
@@ -109,6 +109,8 @@ IFS=$'\n'
 if [[ -e /etc/motd ]];then if [[ $(_check_string_if_exist /etc/motd 'Authorized users only. All activity may be monitored and reported.') -eq 1 ]];then printf "Authorized users only. All activity may be monitored and reported.\n"|tee /etc/motd &>/dev/null;echo '/etc/motd is empty,modified.';else echo '/etc/motd is good,skip';fi;else printf "Authorized users only. All activity may be monitored and reported.\n"|tee /etc/motd &>/dev/null;echo '/etc/motd is not exist,created.';fi;
 if [[ $(_check_string_if_exist /etc/ssh/sshd_config 'Banner /etc/motd') -eq 1 ]];then cp /etc/ssh/sshd_config /etc/ssh/sshd_config-$DATE;sed -i '/^#Banner/aBanner /etc/motd' /etc/ssh/sshd_config;else if [[ $(_get_space_value /etc/ssh/sshd_config 'Banner') != "/etc/motd" ]];then sed -i '/^Banner/d;/^#Banner/aBanner /etc/motd' /etc/ssh/sshd_config;fi;fi
 IFS=$OLD_IFS
+#转维要求关掉update-motd服务
+systemctl disable --now update-motd
 
 #if [[ $(_check_string_if_exist /etc/ssh/sshd_config 'Banner') -eq 1 ]];then cp /etc/ssh/sshd_config /etc/ssh/sshd_config-$DATE;sed -i '/^#Banner/aBanner /etc/motd' /etc/ssh/sshd_config;fi
 find / -maxdepth 3 -name hosts.equiv|xargs -I {} mv {} {}-bak-$DATE
