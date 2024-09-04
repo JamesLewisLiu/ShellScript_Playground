@@ -67,9 +67,9 @@ if [[ ! -e /etc/syslog-ng/syslog-ng.conf ]];then touch /etc/syslog-ng/syslog-ng.
 if [[ ! -e /etc/syslog.conf ]];then touch /etc/syslog.conf;echo '/etc/syslog.conf does not exist,created.';else echo '/etc/syslog.conf exist,skipped.';fi
 if [[ ! -e /etc/rsyslog.conf ]];then touch /etc/rsyslog.conf;echo '/etc/rsyslog.conf does not exist,created.';else echo '/etc/rsyslog.conf exist,skipped.';fi
 #检测/etc/syslog-ng/syslog-ng.conf、/etc/syslog.conf和/etc/rsyslog.conf中是否存在'192.168.0.1'，若无则追加。
-if [[ $(_check_string_if_exist /etc/syslog-ng/syslog-ng.conf '192.168.0.1') -eq 1 ]];then printf "*.*\t@192.168.0.1\n"|tee -a /etc/syslog-ng/syslog-ng.conf &>/dev/null;fi
-if [[ $(_check_string_if_exist /etc/syslog.conf '192.168.0.1') -eq 1 ]];then printf "*.*\t@192.168.0.1\n"|tee -a /etc/syslog.conf &>/dev/null;fi
-if [[ $(_check_string_if_exist /etc/rsyslog.conf '192.168.0.1') -eq 1 ]];then cp /etc/rsyslog.conf /etc/rsyslog.conf-$DATE;sed -i '$a*.*\t@192.168.0.1\n' /etc/rsyslog.conf;fi
+if [[ $(_check_string_if_exist /etc/syslog-ng/syslog-ng.conf '10.108.139.53') -eq 1 ]];then printf "*.*\t@10.108.139.53\n"|tee -a /etc/syslog-ng/syslog-ng.conf &>/dev/null;fi
+if [[ $(_check_string_if_exist /etc/syslog.conf '10.108.139.53') -eq 1 ]];then printf "*.*\t@10.108.139.53\n"|tee -a /etc/syslog.conf &>/dev/null;fi
+if [[ $(_check_string_if_exist /etc/rsyslog.conf '10.108.139.53') -eq 1 ]];then cp /etc/rsyslog.conf /etc/rsyslog.conf-$DATE;sed -i '$a*.*\t@10.108.139.53\n' /etc/rsyslog.conf;fi
 #检测/etc/syslog-ng/syslog-ng.conf、/etc/syslog.conf和/etc/rsyslog.conf中是否存在'authpriv.info'，若无则追加。
 if [[ $(_check_string_if_exist /etc/syslog-ng/syslog-ng.conf 'authpriv.info') -eq 1 ]];then printf "authpriv.info\t/var/log/authlog\n"|tee -a /etc/syslog-ng/syslog-ng.conf &>/dev/null;fi
 if [[ $(_check_string_if_exist /etc/syslog.conf 'authpriv.info') -eq 1 ]];then printf "authpriv.info\t/var/log/authlog\n"|tee -a /etc/syslog.conf &>/dev/null;fi
@@ -148,12 +148,12 @@ sysctl -p;
 for a in $(find /etc/passwd /etc/shadow /etc/group);do cp -p $a $a-bak-$DATE;done
 chmod 0644 /etc/passwd;chmod 0400 /etc/shadow;chmod 0644 /etc/group
 
-cp -p /etc/pam.d/su /etc/pam.d/su-bak-$DATE;sed -i '/auth\t\tsufficient\tpam_rootok.so/aauth\t\trequired\tpam_wheel.so group=wheel\nauth\t\trequired\tpam_wheel.so use_uid' /etc/pam.d/su;
-
-IFS=$'\n'
-cp -p /etc/pam.d/system-auth /etc/pam.d/system-auth-bak-$DATE;
-if [[ $(_check_string_if_exist /etc/pam.d/system-auth 'dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1 minclass=3 minlen=8 enforce_for_root') -eq 1 ]];then sed -i '/password    requisite/apassword    requisite     pam_cracklib.so dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1 minclass=3 minlen=8 enforce_for_root' /etc/pam.d/system-auth;fi
-IFS=$OLD_IFS
+#cp -p /etc/pam.d/su /etc/pam.d/su-bak-$DATE;sed -i '/auth\t\tsufficient\tpam_rootok.so/aauth\t\trequired\tpam_wheel.so group=wheel\nauth\t\trequired\tpam_wheel.so use_uid' /etc/pam.d/su;
+#IFS=$'\n'
+#cp -p /etc/pam.d/system-auth /etc/pam.d/system-auth-bak-$DATE;
+#if [[ $(_check_string_if_exist /etc/pam.d/system-auth 'dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1 minclass=3 minlen=8 enforce_for_root') -eq 1 ]];then sed -i '/password    requisite/apassword    requisite     pam_cracklib.so dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1 minclass=3 minlen=8 enforce_for_root' /etc/pam.d/system-auth;fi
+#IFS=$OLD_IFS
+#if [[ $(_check_string_if_exist /etc/pam.d/system-auth 'remember=5') -eq 1 ]];then sed -i '/password    sufficient    pam_unix.so/s/$/ remember=5/' /etc/pam.d/system-auth;fi
 
 #dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1 minclass=3 minlen=8
 cp -p /etc/security/pwquality.conf /etc/security/pwquality.conf-bak-$(date +%s);
@@ -163,8 +163,6 @@ if [[ $(_get_equal_value /etc/security/pwquality.conf 'lcredit') != "-1" ]];then
 if [[ $(_get_equal_value /etc/security/pwquality.conf 'ocredit') != "-1" ]];then sed -i '/ocredit/s/^/#/;/^#ocredit/aocredit = -1' /etc/security/pwquality.conf;fi
 if [[ $(_get_equal_value /etc/security/pwquality.conf 'minclass') != "3" ]];then sed -i '/minclass/s/^/#/;/^#minclass/aminclass = -1' /etc/security/pwquality.conf;fi
 if [[ $(_get_equal_value /etc/security/pwquality.conf 'minlen') != "8" ]];then sed -i '/minlen/s/^/#/;/^#minlen/aminlen = -1' /etc/security/pwquality.conf;fi
-
-if [[ $(_check_string_if_exist /etc/pam.d/system-auth 'remember=5') -eq 1 ]];then sed -i '/password    sufficient    pam_unix.so/s/$/ remember=5/' /etc/pam.d/system-auth;fi
 
 #/etc/security/opasswd
 if [[ -e /etc/security/opasswd ]];then if [[ $(stat -c "%u" /etc/security/opasswd) -ne 0 ]];then chown 0 /etc/security/opasswd;fi;if [[ $(stat -c "%g" /etc/security/opasswd) -ne 0 ]];then chown :0 /etc/security/opasswd;fi;if [[ $(stat -c "%a" /etc/security/opasswd) -ne 600 ]];then chmod 600 /etc/security/opasswd;fi;else touch /etc/security/opasswd;chown root:root /etc/security/opasswd;chmod 600 /etc/security/opasswd;fi
@@ -252,8 +250,8 @@ _check_and_mod_file_permission 600 /var/log/boot.log
 for a in $(grep bash /etc/passwd|grep -v root|awk -F: '{print $1}');do if [[ $(chage -l $a|grep Max|awk '{print$NF}') -gt 90 ]];then chage -M90 $a;chage -d $(date +%F) $a;fi;done
 
 #Ntp
-if [[ -e /etc/ntp.conf ]];then sed -i '/^server/d;/^pool/d;$aserver 10.252.17.10\nserver 10.252.17.11\n' /etc/ntp.conf;else printf "#$(date +%F)\n#\nserver 10.252.17.10\nserver 10.252.17.11\n"|tee /etc/ntp.conf &>/dev/null;fi
-if [[ -e /etc/chrony.conf ]];then sed -i '/^server/d;/^pool/d;$aserver 10.252.17.10\nserver 10.252.17.11\n' /etc/chrony.conf;else printf "#$(date +%F)\n#\nserver 10.252.17.10\nserver 10.252.17.11\n"|tee /etc/chrony.conf &>/dev/null;fi
+if [[ -e /etc/ntp.conf ]];then sed -i '/^server/d;/^pool/d;$aserver 10.252.17.10\nserver 10.252.17.11\n' /etc/ntp.conf;else ;fi
+if [[ -e /etc/chrony.conf ]];then sed -i '/^server/d;/^pool/d;$aserver 10.252.17.10\nserver 10.252.17.11\n' /etc/chrony.conf;else ;fi
 
 #Self delete after execution
 #rm -- "$0"
